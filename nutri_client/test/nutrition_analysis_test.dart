@@ -89,8 +89,6 @@ void main() {
             body: AppHeader(
               apiKey: '',
               onApiKeyChanged: (_) {},
-              isDemoMode: true,
-              onDemoModeChanged: (_) {},
             ),
           ),
         ),

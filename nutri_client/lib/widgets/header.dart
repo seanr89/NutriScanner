@@ -4,15 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 class AppHeader extends StatefulWidget {
   final String apiKey;
   final ValueChanged<String> onApiKeyChanged;
-  final bool isDemoMode;
-  final ValueChanged<bool> onDemoModeChanged;
 
   const AppHeader({
     super.key,
     required this.apiKey,
     required this.onApiKeyChanged,
-    required this.isDemoMode,
-    required this.onDemoModeChanged,
   });
 
   @override
@@ -28,6 +24,14 @@ class _AppHeaderState extends State<AppHeader>
   void initState() {
     super.initState();
     _keyController = TextEditingController(text: widget.apiKey);
+  }
+
+  @override
+  void didUpdateWidget(covariant AppHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.apiKey != widget.apiKey) {
+      _keyController.text = widget.apiKey;
+    }
   }
 
   @override
@@ -176,108 +180,75 @@ class _AppHeaderState extends State<AppHeader>
                                   color: const Color(0xff1e293b),
                                 ),
                               ),
-                              // Demo Mode Status
+                              // Model Badge
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: widget.isDemoMode
-                                      ? const Color(0xffebfdf5)
-                                      : const Color(0xfff1f5f9),
+                                  color: const Color(0xffebfdf5), // light green
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: widget.isDemoMode
-                                        ? const Color(0xffa7f3d0)
-                                        : const Color(0xffcbd5e1),
+                                    color: const Color(0xffa7f3d0),
                                   ),
                                 ),
                                 child: Text(
-                                  widget.isDemoMode
-                                      ? 'Demo Mode Active'
-                                      : 'Live Gemini API',
+                                  'gemini-flash-lite-latest',
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: widget.isDemoMode
-                                        ? const Color(0xff047857)
-                                        : const Color(0xff475569),
+                                    color: const Color(0xff047857),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          // Toggle Mode
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              'Interactive Demo Mode',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xff334155),
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Uses high-fidelity pre-baked nutritional analyses. Ideal for fast UI showcase without an API key.',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xff64748b),
-                              ),
-                            ),
-                            value: widget.isDemoMode,
-                            activeColor: const Color(0xff10b981),
-                            onChanged: widget.onDemoModeChanged,
-                          ),
-                          const Divider(height: 24, color: Color(0xffe2e8f0)),
+                          const SizedBox(height: 18),
                           // Key Input field
-                          if (!widget.isDemoMode) ...[
-                            Text(
-                              'Gemini API Key',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xff475569),
-                              ),
+                          Text(
+                            'Gemini API Key',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xff475569),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                          color: const Color(0xffcbd5e1)),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xffcbd5e1)),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  child: TextField(
+                                    controller: _keyController,
+                                    obscureText: true,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter Gemini API Key...',
+                                      border: InputBorder.none,
+                                      isDense: true,
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
-                                    child: TextField(
-                                      controller: _keyController,
-                                      obscureText: true,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Enter gemini-2.5 API Key...',
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                      ),
-                                      style: GoogleFonts.inter(fontSize: 13),
-                                      onChanged: widget.onApiKeyChanged,
-                                    ),
+                                    style: GoogleFonts.inter(fontSize: 13),
+                                    onChanged: widget.onApiKeyChanged,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Obtain your key from Google AI Studio. Note: Key is stored in-memory during session.',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: const Color(0xff94a3b8),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Obtain your key from Google AI Studio. Note: Key can be pre-configured in .env file.',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xff94a3b8),
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),

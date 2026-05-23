@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'models/nutrition_analysis.dart';
 import 'services/gemini_service.dart';
@@ -8,7 +9,13 @@ import 'widgets/loading_view.dart';
 import 'widgets/results_view.dart';
 import 'widgets/upload_zone.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Failed to load .env file: $e');
+  }
   runApp(const MyApp());
 }
 
@@ -46,7 +53,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   AppScanState _appState = AppScanState.idle;
   String _apiKey = '';
-  bool _isDemoMode = true; // Active by default for immediate out-of-the-box UI demonstration
 
   Uint8List? _selectedImageBytes;
   String _selectedMimeType = '';
@@ -54,7 +60,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   NutritionAnalysis? _nutritionAnalysis;
   String _errorMessage = '';
-  int _demoIndex = 0; // Increments to cycle through different healthy mock meals!
+
+  @override
+  void initState() {
+    super.initState();
+    // Automated ingestion of Gemini API Key from environment variables loaded via .env
+    _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+  }
 
   void _handlePhotoSelected(
       Uint8List bytes, String mimeType, String fileName) async {
@@ -67,32 +79,22 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      if (_isDemoMode) {
-        // 1. Demo Mode: Fetch pre-baked analysis and cycle food index
-        final analysis = await GeminiService.getMockAnalysis(_demoIndex);
-        setState(() {
-          _nutritionAnalysis = analysis;
-          _demoIndex = (_demoIndex + 1) % 3; // Cycle index between 0, 1, 2
-          _appState = AppScanState.results;
-        });
-      } else {
-        // 2. Live API Mode: Call Gemini HTTP endpoint
-        if (_apiKey.trim().isEmpty) {
-          throw Exception(
-              'API Key is empty. Please open the settings panel in the header and paste your Gemini API Key, or toggle Interactive Demo Mode.');
-        }
-
-        final analysis = await GeminiService.analyzeFoodImage(
-          imageBytes: bytes,
-          mimeType: mimeType,
-          apiKey: _apiKey,
-        );
-
-        setState(() {
-          _nutritionAnalysis = analysis;
-          _appState = AppScanState.results;
-        });
+      if (_apiKey.trim().isEmpty) {
+        throw Exception(
+            'Gemini API Key is empty. Please open the settings panel in the header and paste your API Key, or configure it in the .env file.');
       }
+
+      // Live API Mode: Call Gemini HTTP endpoint (targets gemini-flash-lite-latest)
+      final analysis = await GeminiService.analyzeFoodImage(
+        imageBytes: bytes,
+        mimeType: mimeType,
+        apiKey: _apiKey,
+      );
+
+      setState(() {
+        _nutritionAnalysis = analysis;
+        _appState = AppScanState.results;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -115,18 +117,12 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Branding + API drawer header
+            // Branding + API drawer header (Demo Mode removed)
             AppHeader(
               apiKey: _apiKey,
               onApiKeyChanged: (key) {
                 setState(() {
                   _apiKey = key;
-                });
-              },
-              isDemoMode: _isDemoMode,
-              onDemoModeChanged: (val) {
-                setState(() {
-                  _isDemoMode = val;
                 });
               },
             ),
@@ -169,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // A gorgeous glowing error warning state card
+  // A gorgeous glowing error warning state card (Demo Mode buttons removed)
   Widget _buildErrorView() {
     return Center(
       key: const ValueKey('error_view'),
@@ -226,41 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             const SizedBox(height: 32),
-            // Actions
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isDemoMode = true;
-                  _handlePhotoSelected(
-                    _selectedImageBytes!,
-                    _selectedMimeType,
-                    _selectedFileName,
-                  );
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff10b981), // Emerald green
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.bolt, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Try Demo Mode instead',
-                    style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            // Go Back button
             OutlinedButton(
               onPressed: _resetScan,
               style: OutlinedButton.styleFrom(
@@ -277,7 +239,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   const Icon(Icons.arrow_back, size: 16),
                   const SizedBox(width: 8),
                   Text(
-                    'Go Back & Try Another Photo',
+                    'Go Back & Select Another Photo',
                     style: GoogleFonts.inter(
                         fontSize: 14, fontWeight: FontWeight.bold),
                   ),
