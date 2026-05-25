@@ -96,8 +96,15 @@ class _MyHomePageState extends State<MyHomePage> {
         _appState = AppScanState.results;
       });
     } catch (e) {
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (msg.contains('SocketException') ||
+          msg.contains('Failed host lookup') ||
+          msg.contains('ClientException')) {
+        msg =
+            'Network connection failed. Please ensure your device is connected to the internet and can resolve Google APIs. (Make sure you have restarted the app after granting Android manifest internet permissions.)';
+      }
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = msg;
         _appState = AppScanState.error;
       });
     }
