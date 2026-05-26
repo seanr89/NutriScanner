@@ -81,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       if (_apiKey.trim().isEmpty) {
         throw Exception(
-            'Gemini API Key is empty. Please open the settings panel in the header and paste your API Key, or configure it in the .env file.');
+            'Gemini API Key is empty. Please configure it in the .env file.');
       }
 
       // Live API Mode: Call Gemini HTTP endpoint (targets gemini-flash-lite-latest)
@@ -125,14 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           children: [
             // Branding + API drawer header (Demo Mode removed)
-            AppHeader(
-              apiKey: _apiKey,
-              onApiKeyChanged: (key) {
-                setState(() {
-                  _apiKey = key;
-                });
-              },
-            ),
+            const AppHeader(),
             // Central Content Section (State Machine)
             Expanded(
               child: AnimatedSwitcher(

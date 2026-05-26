@@ -86,10 +86,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: AppHeader(
-              apiKey: '',
-              onApiKeyChanged: (_) {},
-            ),
+            body: const AppHeader(),
           ),
         ),
       );
