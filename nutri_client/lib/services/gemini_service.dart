@@ -28,7 +28,7 @@ class GeminiService {
             },
             {
               'text':
-                  "Identify this food dish and provide a detailed nutritional analysis. Estimate the portion size shown. Return the data in strict JSON format matching the schema.",
+                  "Identify this food dish and provide a detailed nutritional analysis, including an approximate list of ingredients that make up the dish. Estimate the portion size shown. Return the data in strict JSON format matching the schema.",
             },
           ],
         },
@@ -89,6 +89,57 @@ class GeminiService {
               'description':
                   'Confidence score from 0 to 100 regarding the food identification',
             },
+            'ingredients': {
+              'type': 'ARRAY',
+              'description': 'List of ingredients making up this dish, with individual nutritional breakdown',
+              'items': {
+                'type': 'OBJECT',
+                'properties': {
+                  'name': {
+                    'type': 'STRING',
+                    'description': 'Name of the ingredient (e.g. Chicken breast, White rice, Olive oil)',
+                  },
+                  'amount': {
+                    'type': 'STRING',
+                    'description': 'Portion amount (e.g. 150g, 1 cup, 1 tbsp)',
+                  },
+                  'calories': {
+                    'type': 'NUMBER',
+                    'description': 'Estimated calories in kcal',
+                  },
+                  'protein': {
+                    'type': 'NUMBER',
+                    'description': 'Protein in grams',
+                  },
+                  'carbs': {
+                    'type': 'NUMBER',
+                    'description': 'Carbohydrates in grams',
+                  },
+                  'fat': {
+                    'type': 'NUMBER',
+                    'description': 'Fat in grams',
+                  },
+                  'fiber': {
+                    'type': 'NUMBER',
+                    'description': 'Fiber in grams',
+                  },
+                  'sugar': {
+                    'type': 'NUMBER',
+                    'description': 'Sugar in grams',
+                  },
+                },
+                'required': [
+                  'name',
+                  'amount',
+                  'calories',
+                  'protein',
+                  'carbs',
+                  'fat',
+                  'fiber',
+                  'sugar',
+                ],
+              },
+            },
           },
           'required': [
             'foodName',
@@ -98,6 +149,7 @@ class GeminiService {
             'vitaminsAndMinerals',
             'healthSummary',
             'confidenceScore',
+            'ingredients',
           ],
         },
       },

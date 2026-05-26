@@ -166,6 +166,11 @@ class _MyHomePageState extends State<MyHomePage> {
           analysis: _nutritionAnalysis!,
           imageBytes: _selectedImageBytes!,
           onAnalyzeAnother: _resetScan,
+          onAnalysisChanged: (updated) {
+            setState(() {
+              _nutritionAnalysis = updated;
+            });
+          },
         );
       case AppScanState.error:
         return _buildErrorView();
