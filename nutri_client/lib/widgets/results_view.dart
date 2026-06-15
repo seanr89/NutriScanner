@@ -8,12 +8,14 @@ class ResultsView extends StatelessWidget {
   final NutritionAnalysis analysis;
   final Uint8List imageBytes;
   final VoidCallback onAnalyzeAnother;
+  final ValueChanged<NutritionAnalysis> onAnalysisChanged;
 
   const ResultsView({
     super.key,
     required this.analysis,
     required this.imageBytes,
     required this.onAnalyzeAnother,
+    required this.onAnalysisChanged,
   });
 
   @override
@@ -43,13 +45,15 @@ class ResultsView extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left Column (Food Visuals, Energy & Insights)
+        // Left Column (Food Visuals, Ingredients, Energy & Insights)
         Expanded(
           flex: 6,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFoodVisualsCard(),
+              _buildFoodVisualsCard(context),
+              const SizedBox(height: 24),
+              _buildIngredientsCard(context),
               const SizedBox(height: 24),
               _buildHealthInsightCard(),
             ],
@@ -79,9 +83,11 @@ class ResultsView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildFoodVisualsCard(),
+        _buildFoodVisualsCard(context),
         const SizedBox(height: 24),
         _buildMacronutrientsCard(),
+        const SizedBox(height: 24),
+        _buildIngredientsCard(context),
         const SizedBox(height: 24),
         _buildVitaminsCard(),
         const SizedBox(height: 24),
@@ -93,14 +99,14 @@ class ResultsView extends StatelessWidget {
   }
 
   // 1. Food Image + Floating Badge + Dish Title + Confidence Pill + Energy Card
-  Widget _buildFoodVisualsCard() {
+  Widget _buildFoodVisualsCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -130,11 +136,11 @@ class ResultsView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.92),
+                        color: Colors.white.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -154,15 +160,35 @@ class ResultsView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // Dish Title
-          Text(
-            analysis.foodName,
-            style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xff0f172a), // Slate 900
-              height: 1.25,
-            ),
+          // Dish Title with Edit Icon
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  analysis.foodName,
+                  style: GoogleFonts.outfit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xff0f172a), // Slate 900
+                    height: 1.25,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Color(0xff10b981),
+                  size: 28,
+                ),
+                onPressed: () => _showEditTitleDialog(context),
+                tooltip: 'Edit meal details',
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xffebfdf5),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           // Confidence pill
@@ -561,5 +587,530 @@ class ResultsView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // --- Dynamic Ingredient Breakdown & Editing Section ---
+
+  Widget _buildIngredientsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.restaurant_menu_rounded,
+                    color: Color(0xff10b981),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Ingredients & Portions',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xff1e293b),
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: () => _showAddEditIngredientDialog(context),
+                icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xff10b981)),
+                tooltip: 'Add ingredient',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (analysis.ingredients.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'No ingredients listed. Tap "+" to add one!',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xff94a3b8),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: analysis.ingredients.length,
+              separatorBuilder: (context, index) => const Divider(
+                color: Color(0xfff1f5f9),
+                height: 1,
+              ),
+              itemBuilder: (context, index) {
+                final ing = analysis.ingredients[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    ing.name,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xff0f172a),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xfff1f5f9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    ing.amount,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xff475569),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                _buildIngMacroBadge('${ing.calories.toInt()} kcal', const Color(0xfff97316)),
+                                _buildIngMacroBadge('P: ${ing.protein.toInt()}g', const Color(0xff2ecc71)),
+                                _buildIngMacroBadge('C: ${ing.carbs.toInt()}g', const Color(0xff3498db)),
+                                _buildIngMacroBadge('F: ${ing.fat.toInt()}g', const Color(0xfff1c40f)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Action buttons (Edit & Delete)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xff64748b)),
+                            onPressed: () => _showAddEditIngredientDialog(
+                              context,
+                              ingredient: ing,
+                              index: index,
+                            ),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xffef4444)),
+                            onPressed: () => _deleteIngredient(context, index),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIngMacroBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  void _showEditTitleDialog(BuildContext context) {
+    final nameController = TextEditingController(text: analysis.foodName);
+    final servingController = TextEditingController(text: analysis.servingSize);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Edit Meal Details',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xff1e293b),
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Meal Name',
+                    labelStyle: GoogleFonts.inter(color: const Color(0xff64748b)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xffcbd5e1)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xff10b981), width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  style: GoogleFonts.inter(fontSize: 15),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: servingController,
+                  decoration: InputDecoration(
+                    labelText: 'Serving Size',
+                    labelStyle: GoogleFonts.inter(color: const Color(0xff64748b)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xffcbd5e1)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Color(0xff10b981), width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  style: GoogleFonts.inter(fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: const Color(0xff64748b), fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+               onPressed: () {
+                 final updated = analysis.copyWith(
+                   foodName: nameController.text.trim().isNotEmpty
+                       ? nameController.text.trim()
+                       : analysis.foodName,
+                   servingSize: servingController.text.trim(),
+                 );
+                 onAnalysisChanged(updated);
+                 Navigator.pop(context);
+               },
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: const Color(0xff10b981),
+                 foregroundColor: Colors.white,
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+               ),
+               child: Text(
+                 'Save Changes',
+                 style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+               ),
+             ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddEditIngredientDialog(BuildContext context, {Ingredient? ingredient, int? index}) {
+    final nameController = TextEditingController(text: ingredient?.name ?? '');
+    final amountController = TextEditingController(text: ingredient?.amount ?? '100g');
+    final calController = TextEditingController(text: ingredient != null ? ingredient.calories.toInt().toString() : '100');
+    final protController = TextEditingController(text: ingredient != null ? ingredient.protein.toInt().toString() : '5');
+    final carbController = TextEditingController(text: ingredient != null ? ingredient.carbs.toInt().toString() : '15');
+    final fatController = TextEditingController(text: ingredient != null ? ingredient.fat.toInt().toString() : '2');
+    final fiberController = TextEditingController(text: ingredient != null ? ingredient.fiber.toInt().toString() : '1');
+    final sugarController = TextEditingController(text: ingredient != null ? ingredient.sugar.toInt().toString() : '2');
+
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            ingredient == null ? 'Add Ingredient' : 'Edit Ingredient',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xff1e293b),
+            ),
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: _dialogInputDecoration('Ingredient Name', 'e.g. Avocado'),
+                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                    style: GoogleFonts.inter(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: amountController,
+                    decoration: _dialogInputDecoration('Amount / Serving', 'e.g. 1 half, 150g'),
+                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                    style: GoogleFonts.inter(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                     children: [
+                       Expanded(
+                         child: TextFormField(
+                           controller: calController,
+                           decoration: _dialogInputDecoration('Calories (kcal)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                       const SizedBox(width: 12),
+                       Expanded(
+                         child: TextFormField(
+                           controller: fatController,
+                           decoration: _dialogInputDecoration('Fat (g)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                     ],
+                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                     children: [
+                       Expanded(
+                         child: TextFormField(
+                           controller: carbController,
+                           decoration: _dialogInputDecoration('Carbs (g)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                       const SizedBox(width: 12),
+                       Expanded(
+                         child: TextFormField(
+                           controller: protController,
+                           decoration: _dialogInputDecoration('Protein (g)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                     ],
+                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                     children: [
+                       Expanded(
+                         child: TextFormField(
+                           controller: fiberController,
+                           decoration: _dialogInputDecoration('Fiber (g)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                       const SizedBox(width: 12),
+                       Expanded(
+                         child: TextFormField(
+                           controller: sugarController,
+                           decoration: _dialogInputDecoration('Sugar (g)', '0'),
+                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                           validator: _numberValidator,
+                           style: GoogleFonts.inter(fontSize: 14),
+                         ),
+                       ),
+                     ],
+                   ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: const Color(0xff64748b), fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+               onPressed: () {
+                 if (formKey.currentState?.validate() ?? false) {
+                   final newIng = Ingredient(
+                     name: nameController.text.trim(),
+                     amount: amountController.text.trim(),
+                     calories: double.tryParse(calController.text) ?? 0.0,
+                     protein: double.tryParse(protController.text) ?? 0.0,
+                     carbs: double.tryParse(carbController.text) ?? 0.0,
+                     fat: double.tryParse(fatController.text) ?? 0.0,
+                     fiber: double.tryParse(fiberController.text) ?? 0.0,
+                     sugar: double.tryParse(sugarController.text) ?? 0.0,
+                   );
+
+                   final list = List<Ingredient>.from(analysis.ingredients);
+                   if (ingredient != null && index != null) {
+                     list[index] = newIng;
+                   } else {
+                     list.add(newIng);
+                   }
+
+                   _recalculateMacros(list);
+                   Navigator.pop(context);
+                 }
+               },
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: const Color(0xff10b981),
+                 foregroundColor: Colors.white,
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+               ),
+               child: Text(
+                 ingredient == null ? 'Add' : 'Save',
+                 style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+               ),
+             ),
+          ],
+        );
+      },
+    );
+  }
+
+  InputDecoration _dialogInputDecoration(String label, String hint) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: GoogleFonts.inter(color: const Color(0xff64748b), fontSize: 13),
+      hintStyle: GoogleFonts.inter(color: const Color(0xffcbd5e1), fontSize: 13),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xffcbd5e1)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xff10b981), width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xffef4444)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xffef4444), width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  String? _numberValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Required';
+    final num = double.tryParse(value);
+    if (num == null) return 'Must be a number';
+    if (num < 0) return 'Cannot be negative';
+    return null;
+  }
+
+  void _recalculateMacros(List<Ingredient> updatedIngredients) {
+    double totalCalories = 0.0;
+    double totalProtein = 0.0;
+    double totalCarbs = 0.0;
+    double totalFat = 0.0;
+    double totalFiber = 0.0;
+    double totalSugar = 0.0;
+
+    for (var ing in updatedIngredients) {
+      totalCalories += ing.calories;
+      totalProtein += ing.protein;
+      totalCarbs += ing.carbs;
+      totalFat += ing.fat;
+      totalFiber += ing.fiber;
+      totalSugar += ing.sugar;
+    }
+
+    final updatedAnalysis = analysis.copyWith(
+      calories: totalCalories,
+      macros: MacroData(
+        protein: totalProtein,
+        carbs: totalCarbs,
+        fat: totalFat,
+        fiber: totalFiber,
+        sugar: totalSugar,
+      ),
+      ingredients: updatedIngredients,
+    );
+
+    onAnalysisChanged(updatedAnalysis);
+  }
+
+  void _deleteIngredient(BuildContext context, int index) {
+    final list = List<Ingredient>.from(analysis.ingredients);
+    list.removeAt(index);
+    _recalculateMacros(list);
   }
 }
