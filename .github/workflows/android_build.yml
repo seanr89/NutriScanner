@@ -4,12 +4,23 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: # Allows manual trigger of the build workflow from the Actions tab
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: nutri_client
 
     steps:
       # 1. Checkout repository code
@@ -23,6 +34,7 @@ jobs:
           distribution: 'zulu' # Highly stable OpenJDK distribution
           java-version: '17'
           cache: 'gradle'
+          build-root-directory: nutri_client/android
 
       # 3. Setup Flutter action
       - name: Set up Flutter
@@ -34,31 +46,29 @@ jobs:
       # 4. Inject Gemini API Key environment variable from GitHub Secrets into .env asset
       - name: Inject Environment Secrets
         run: |
-          mkdir -p nutri_client
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > nutri_client/.env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
 
       # 5. Download Flutter dependencies
       - name: Install dependencies
-        run: |
-          cd nutri_client
-          flutter pub get
+        run: flutter pub get
 
-      # 6. Run Flutter Automated Verification Tests
+      # 6. Analyze Flutter code for potential issues and lint warnings
+      - name: Analyze Code
+        run: flutter analyze
+
+      # 7. Run Flutter Automated Verification Tests
       - name: Run Tests
-        run: |
-          cd nutri_client
-          flutter test
+        run: flutter test
 
-      # 7. Build release APK
+      # 8. Build release APK
       - name: Build Release APK
-        run: |
-          cd nutri_client
-          flutter build apk --release
+        run: flutter build apk --release
 
-      # 8. Upload compiled APK as a build artifact
+      # 9. Upload compiled APK as a build artifact
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: nutri-scan-android-apk
           path: nutri_client/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7 # Kept for 7 days in your GitHub dashboard
+

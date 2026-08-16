@@ -5,9 +5,9 @@ import 'package:http/http.dart' as http;
 import '../models/nutrition_analysis.dart';
 
 class GeminiService {
-  static const String _baseModel = 'gemini-flash-lite-latest';
+  static const String _baseModel = 'gemini-3.7-flash';
   static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent';
 
   /// Performs the actual API call to Gemini using JSON schema structure.
   static Future<NutritionAnalysis> analyzeFoodImage({
@@ -91,13 +91,15 @@ class GeminiService {
             },
             'ingredients': {
               'type': 'ARRAY',
-              'description': 'List of ingredients making up this dish, with individual nutritional breakdown',
+              'description':
+                  'List of ingredients making up this dish, with individual nutritional breakdown',
               'items': {
                 'type': 'OBJECT',
                 'properties': {
                   'name': {
                     'type': 'STRING',
-                    'description': 'Name of the ingredient (e.g. Chicken breast, White rice, Olive oil)',
+                    'description':
+                        'Name of the ingredient (e.g. Chicken breast, White rice, Olive oil)',
                   },
                   'amount': {
                     'type': 'STRING',
@@ -115,18 +117,9 @@ class GeminiService {
                     'type': 'NUMBER',
                     'description': 'Carbohydrates in grams',
                   },
-                  'fat': {
-                    'type': 'NUMBER',
-                    'description': 'Fat in grams',
-                  },
-                  'fiber': {
-                    'type': 'NUMBER',
-                    'description': 'Fiber in grams',
-                  },
-                  'sugar': {
-                    'type': 'NUMBER',
-                    'description': 'Sugar in grams',
-                  },
+                  'fat': {'type': 'NUMBER', 'description': 'Fat in grams'},
+                  'fiber': {'type': 'NUMBER', 'description': 'Fiber in grams'},
+                  'sugar': {'type': 'NUMBER', 'description': 'Sugar in grams'},
                 },
                 'required': [
                   'name',
