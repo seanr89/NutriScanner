@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../models/nutrition_analysis.dart';
 
 class GeminiService {
-  static const String _baseModel = 'gemini-3.7-flash';
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent';
 

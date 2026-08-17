@@ -55,8 +55,6 @@ class _MyHomePageState extends State<MyHomePage> {
   String _apiKey = '';
 
   Uint8List? _selectedImageBytes;
-  String _selectedMimeType = '';
-  String _selectedFileName = '';
 
   NutritionAnalysis? _nutritionAnalysis;
   String _errorMessage = '';
@@ -72,8 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
       Uint8List bytes, String mimeType, String fileName) async {
     setState(() {
       _selectedImageBytes = bytes;
-      _selectedMimeType = mimeType;
-      _selectedFileName = fileName;
       _appState = AppScanState.scanning;
       _errorMessage = '';
     });
@@ -183,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),

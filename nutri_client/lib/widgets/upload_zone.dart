@@ -233,7 +233,7 @@ class _UploadZoneState extends State<UploadZone> {
                       color: const Color(0xff10b981), // Glowing Emerald
                       shadows: [
                         Shadow(
-                          color: const Color(0xff10b981).withOpacity(0.2),
+                          color: const Color(0xff10b981).withValues(alpha: 0.2),
                           blurRadius: 15,
                           offset: const Offset(0, 4),
                         ),
@@ -273,7 +273,7 @@ class _UploadZoneState extends State<UploadZone> {
                   height: 280,
                   decoration: BoxDecoration(
                     color: _isHovered
-                        ? const Color(0xffebfdf5).withOpacity(0.4)
+                        ? const Color(0xffebfdf5).withValues(alpha: 0.4)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
@@ -287,8 +287,8 @@ class _UploadZoneState extends State<UploadZone> {
                     boxShadow: [
                       BoxShadow(
                         color: _isHovered
-                            ? const Color(0xff10b981).withOpacity(0.06)
-                            : Colors.black.withOpacity(0.02),
+                            ? const Color(0xff10b981).withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.02),
                         blurRadius: _isHovered ? 20 : 10,
                         offset: const Offset(0, 4),
                       ),
@@ -308,53 +308,60 @@ class _UploadZoneState extends State<UploadZone> {
                           ),
                         ),
                       ),
-                      // Core details
-                      Center(
+                      // Core Interactive Content inside Zone
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Glowing green cloud icon
+                            // Circular Cloud Upload Icon with pulse effect
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
+                              duration: const Duration(milliseconds: 200),
                               width: 64,
                               height: 64,
                               decoration: BoxDecoration(
                                 color: _isHovered
-                                    ? const Color(0xffd1fae5)
-                                    : const Color(0xffebfdf5),
+                                    ? const Color(0xff10b981)
+                                    : const Color(0xfff1f5f9),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.cloud_upload_outlined,
+                                color: _isHovered
+                                    ? Colors.white
+                                    : const Color(0xff64748b),
                                 size: 30,
-                                color: Color(0xff10b981),
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            // Bold Action text
+                            const SizedBox(height: 16),
+                            // Direct call-to-action
                             Text(
-                              'Click to upload or drag and drop',
+                              'Drop your meal photo here, or browse',
+                              textAlign: TextAlign.center,
                               style: GoogleFonts.outfit(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xff1e293b),
+                                color: const Color(0xff1e293b), // Slate 800
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            // Details
+                            const SizedBox(height: 4),
+                            // Supported Formats
                             Text(
-                              'SVG, PNG, JPG or GIF (max. 10MB)',
+                              'Supports JPG, PNG, WEBP (up to 10MB)',
+                              textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.normal,
-                                color: const Color(0xff64748b),
+                                fontSize: 12,
+                                color: const Color(0xff94a3b8), // Slate 400
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            // Premium button
-                            AnimatedScale(
-                              scale: _isHovered ? 1.03 : 1.0,
-                              duration: const Duration(milliseconds: 200),
+                            const SizedBox(height: 16),
+                            // Button trigger
+                            InkWell(
+                              onTap: () => _showImageSourceActionSheet(context),
+                              borderRadius: BorderRadius.circular(30),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 24,
@@ -369,7 +376,7 @@ class _UploadZoneState extends State<UploadZone> {
                                     BoxShadow(
                                       color: const Color(
                                         0xff00a86b,
-                                      ).withOpacity(0.2),
+                                      ).withValues(alpha: 0.2),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -447,8 +454,8 @@ class _DashedBorderPainter extends CustomPainter {
     }
 
     // An elegant custom dashed outline
-    final PathMetrics = path.computeMetrics();
-    for (final metric in PathMetrics) {
+    final pathMetrics = path.computeMetrics();
+    for (final metric in pathMetrics) {
       double distance = 0.0;
       while (distance < metric.length) {
         final double length = min(dashWidth, metric.length - distance);

@@ -98,7 +98,7 @@ class _LoadingViewState extends State<LoadingView>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -120,7 +120,7 @@ class _LoadingViewState extends State<LoadingView>
                     Container(
                       width: double.infinity,
                       height: 350,
-                      color: Colors.black.withOpacity(0.55),
+                      color: Colors.black.withValues(alpha: 0.55),
                     ),
                     // Infinite neon laser line
                     AnimatedBuilder(
@@ -136,10 +136,10 @@ class _LoadingViewState extends State<LoadingView>
                                 gradient: LinearGradient(
                                   colors: [
                                     Colors.transparent,
-                                    const Color(0xff10b981).withOpacity(0.2),
+                                    const Color(0xff10b981).withValues(alpha: 0.2),
                                     const Color(0xff10b981),
                                     const Color(0xff10b981),
-                                    const Color(0xff10b981).withOpacity(0.2),
+                                    const Color(0xff10b981).withValues(alpha: 0.2),
                                     Colors.transparent,
                                   ],
                                   begin: Alignment.centerLeft,
@@ -148,7 +148,7 @@ class _LoadingViewState extends State<LoadingView>
                                 boxShadow: [
                                   BoxShadow(
                                     color: const Color(0xff10b981)
-                                        .withOpacity(0.8),
+                                        .withValues(alpha: 0.8),
                                     blurRadius: 12,
                                     spreadRadius: 2,
                                   ),
