@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import '../utils/foldable_layout.dart';
 
 class UploadZone extends StatefulWidget {
   final Function(Uint8List bytes, String mimeType, String fileName)
-  onPhotoSelected;
+      onPhotoSelected;
 
   const UploadZone({super.key, required this.onPhotoSelected});
 
@@ -53,6 +54,8 @@ class _UploadZoneState extends State<UploadZone> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 500),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -93,9 +96,11 @@ class _UploadZoneState extends State<UploadZone> {
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 20),
                     decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xffcbd5e1).withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: const Color(0xffcbd5e1).withValues(alpha: 0.5)),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -135,7 +140,8 @@ class _UploadZoneState extends State<UploadZone> {
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: Color(0xff94a3b8)),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: Color(0xff94a3b8)),
                       ],
                     ),
                   ),
@@ -149,9 +155,11 @@ class _UploadZoneState extends State<UploadZone> {
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 20),
                     decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xffcbd5e1).withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: const Color(0xffcbd5e1).withValues(alpha: 0.5)),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -191,7 +199,8 @@ class _UploadZoneState extends State<UploadZone> {
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: Color(0xff94a3b8)),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: Color(0xff94a3b8)),
                       ],
                     ),
                   ),
@@ -207,207 +216,378 @@ class _UploadZoneState extends State<UploadZone> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 800),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Headline: "Know What You Eat"
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: GoogleFonts.outfit(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xff0f172a), // Slate 900
-                  height: 1.2,
-                ),
-                children: [
-                  const TextSpan(text: 'Know What You '),
-                  TextSpan(
-                    text: 'Eat',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xff10b981), // Glowing Emerald
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xff10b981).withValues(alpha: 0.2),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMainScreen = constraints.maxWidth >= FoldableLayout.compactBreakpoint;
+        final isWideLandscape = constraints.maxWidth >= FoldableLayout.expandedBreakpoint;
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMainScreen ? 32 : 20,
+                vertical: isMainScreen ? 36 : 24,
               ),
+              child: isWideLandscape
+                  ? _buildWideLandscapeLayout(context)
+                  : _buildStandardLayout(context, isMainScreen),
             ),
-            const SizedBox(height: 18),
-            // Subtitle
-            Container(
-              constraints: const BoxConstraints(maxWidth: 550),
-              child: Text(
-                'Instantly analyze your meals for calories, macros, and nutrients. Just upload a photo and let our AI do the rest.',
-                textAlign: TextAlign.center,
+          ),
+        );
+      },
+    );
+  }
+
+  // Widescreen / Landscape layout (e.g. 7.6" Main Screen in landscape or tabletop mode)
+  Widget _buildWideLandscapeLayout(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Left Column: Hero branding & value prop
+        Expanded(
+          flex: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildBadge(),
+              const SizedBox(height: 16),
+              _buildHeadline(fontSize: 42, textAlign: TextAlign.start),
+              const SizedBox(height: 16),
+              Text(
+                'Instantly analyze meals for calories, macros, and micro-nutrients with Gemini AI.',
                 style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: const Color(0xff475569), // Slate 600
+                  fontSize: 15,
+                  color: const Color(0xff475569),
                   height: 1.5,
                 ),
               ),
+              const SizedBox(height: 24),
+              _buildFeatureChips(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 40),
+        // Right Column: Drop Zone & Quick Actions
+        Expanded(
+          flex: 6,
+          child: Column(
+            children: [
+              _buildDropCard(context, height: 260),
+              const SizedBox(height: 16),
+              _buildDirectActionButtons(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Standard vertical stack (Adaptive for Cover Screen & Main Screen portrait)
+  Widget _buildStandardLayout(BuildContext context, bool isMainScreen) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (isMainScreen) ...[
+          _buildBadge(),
+          const SizedBox(height: 14),
+        ],
+        _buildHeadline(
+          fontSize: isMainScreen ? 40 : 30,
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: isMainScreen ? 14 : 10),
+        Container(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Text(
+            'Instantly analyze your meals for calories, macros, and nutrients. Upload or snap a photo and let our AI do the rest.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: isMainScreen ? 15 : 13.5,
+              fontWeight: FontWeight.normal,
+              color: const Color(0xff475569),
+              height: 1.45,
             ),
-            const SizedBox(height: 48),
-            // Dotted Dash Card Upload Zone
-            MouseRegion(
-              onEnter: (_) => setState(() => _isHovered = true),
-              onExit: (_) => setState(() => _isHovered = false),
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => _showImageSourceActionSheet(context),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: double.infinity,
-                  constraints: const BoxConstraints(maxWidth: 580),
-                  height: 280,
-                  decoration: BoxDecoration(
+          ),
+        ),
+        SizedBox(height: isMainScreen ? 32 : 24),
+        _buildDropCard(context, height: isMainScreen ? 250 : 210),
+        const SizedBox(height: 16),
+        _buildDirectActionButtons(),
+      ],
+    );
+  }
+
+  Widget _buildBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xffebfdf5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.auto_awesome, color: Color(0xff10b981), size: 15),
+          const SizedBox(width: 6),
+          Text(
+            'Smart Visual Recognition',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xff047857),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeadline({required double fontSize, required TextAlign textAlign}) {
+    return RichText(
+      textAlign: textAlign,
+      text: TextSpan(
+        style: GoogleFonts.outfit(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xff0f172a),
+          height: 1.2,
+        ),
+        children: [
+          const TextSpan(text: 'Know What You '),
+          TextSpan(
+            text: 'Eat',
+            style: GoogleFonts.outfit(
+              color: const Color(0xff10b981),
+              shadows: [
+                Shadow(
+                  color: const Color(0xff10b981).withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureChips() {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 10,
+      children: [
+        _buildFeatureItem(Icons.bolt_rounded, 'Instant AI Scan'),
+        _buildFeatureItem(Icons.pie_chart_rounded, 'Macro Breakdown'),
+        _buildFeatureItem(Icons.edit_note_rounded, 'Custom Portions'),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xffe2e8f0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: const Color(0xff10b981)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xff334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropCard(BuildContext context, {required double height}) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => _showImageSourceActionSheet(context),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 580),
+          height: height,
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? const Color(0xffebfdf5).withValues(alpha: 0.4)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _isHovered
+                  ? const Color(0xff10b981)
+                  : const Color(0xffcbd5e1),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _isHovered
+                    ? const Color(0xff10b981).withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.02),
+                blurRadius: _isHovered ? 20 : 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _DashedBorderPainter(
                     color: _isHovered
-                        ? const Color(0xffebfdf5).withValues(alpha: 0.4)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _isHovered
-                          ? const Color(0xff10b981)
-                          : const Color(0xffcbd5e1),
-                      width: 2,
-                      style: BorderStyle
-                          .solid, // Note: Dashed borders require a custom painter. We use a thick clean responsive line or solid for simplicity.
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _isHovered
-                            ? const Color(0xff10b981).withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.02),
-                        blurRadius: _isHovered ? 20 : 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                        ? const Color(0xff10b981)
+                        : const Color(0xffcbd5e1),
+                    strokeWidth: 2,
+                    gap: 6,
                   ),
-                  child: Stack(
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Recreate Dashed border using custom painter for maximum fidelity
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _DashedBorderPainter(
-                            color: _isHovered
-                                ? const Color(0xff10b981)
-                                : const Color(0xffcbd5e1),
-                            strokeWidth: 2,
-                            gap: 6,
-                          ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: height > 220 ? 56 : 46,
+                        height: height > 220 ? 56 : 46,
+                        decoration: BoxDecoration(
+                          color: _isHovered
+                              ? const Color(0xff10b981)
+                              : const Color(0xfff1f5f9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.cloud_upload_outlined,
+                          color: _isHovered
+                              ? Colors.white
+                              : const Color(0xff64748b),
+                          size: height > 220 ? 28 : 22,
                         ),
                       ),
-                      // Core Interactive Content inside Zone
-                      Padding(
+                      const SizedBox(height: 12),
+                      Text(
+                        'Drop meal photo here, or tap to choose',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                          fontSize: height > 220 ? 16 : 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xff1e293b),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Supports JPG, PNG, WEBP',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xff94a3b8),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 24,
+                          vertical: 9,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Circular Cloud Upload Icon with pulse effect
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: _isHovered
-                                    ? const Color(0xff10b981)
-                                    : const Color(0xfff1f5f9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.cloud_upload_outlined,
-                                color: _isHovered
-                                    ? Colors.white
-                                    : const Color(0xff64748b),
-                                size: 30,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Direct call-to-action
-                            Text(
-                              'Drop your meal photo here, or browse',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xff1e293b), // Slate 800
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // Supported Formats
-                            Text(
-                              'Supports JPG, PNG, WEBP (up to 10MB)',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xff94a3b8), // Slate 400
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Button trigger
-                            InkWell(
-                              onTap: () => _showImageSourceActionSheet(context),
-                              borderRadius: BorderRadius.circular(30),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xff00a86b,
-                                  ), // Emerald Green
-                                  borderRadius: BorderRadius.circular(30),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xff00a86b,
-                                      ).withValues(alpha: 0.2),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  'Select Photo',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff10b981),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xff10b981).withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
+                        ),
+                        child: Text(
+                          'Select Photo',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  // Quick 1-tap buttons for camera or gallery directly accessible
+  Widget _buildDirectActionButtons() {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 580),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _pickImage(ImageSource.camera),
+              icon: const Icon(Icons.camera_alt_rounded, size: 18),
+              label: Text(
+                'Camera',
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xff334155),
+                side: const BorderSide(color: Color(0xffcbd5e1)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library_rounded, size: 18),
+              label: Text(
+                'Gallery',
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xff334155),
+                side: const BorderSide(color: Color(0xffcbd5e1)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Custom Painter to draw high fidelity dashed border around the card
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
@@ -433,27 +613,10 @@ class _DashedBorderPainter extends CustomPainter {
     );
     path.addRRect(rrect);
 
-    // Render dashed path manually
     final double dashWidth = gap * 1.5;
     final double dashSpace = gap;
-
-    // We can draw dash slices using dash path effect or manual segments.
-    // Let's implement a clean manual dash approximation.
     final Path dashPath = Path();
 
-    // Simplify dashed borders by calculating segments
-    for (
-      double i = 0;
-      i < size.width + size.height * 2;
-      i += dashWidth + dashSpace
-    ) {
-      // Draw simple dashed segments or rely on neat stroke dashes.
-      // In Flutter Web/Mobile, we draw sub-segments manually or approximate.
-      // To ensure maximum compatibility and zero performance hit,
-      // let's draw neat segment sections for a beautiful dashed border:
-    }
-
-    // An elegant custom dashed outline
     final pathMetrics = path.computeMetrics();
     for (final metric in pathMetrics) {
       double distance = 0.0;

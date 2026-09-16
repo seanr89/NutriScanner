@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/foldable_layout.dart';
 
 class AppHeader extends StatelessWidget {
   const AppHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = FoldableLayout.isCoverScreen(context);
+    final hPadding = isCompact ? 16.0 : 24.0;
+
     return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      height: 64,
+      padding: EdgeInsets.symmetric(horizontal: hPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -27,8 +31,8 @@ class AppHeader extends StatelessWidget {
             children: [
               // Logo Badge
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: const Color(0xff10b981), // Emerald green
                   borderRadius: BorderRadius.circular(10),
@@ -44,18 +48,18 @@ class AppHeader extends StatelessWidget {
                 child: Text(
                   'N',
                   style: GoogleFonts.outfit(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               // Title
               Text(
                 'NutriScan AI',
                 style: GoogleFonts.outfit(
-                  fontSize: 20,
+                  fontSize: isCompact ? 18 : 20,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xff0f172a), // Slate 900
                 ),
@@ -63,13 +67,27 @@ class AppHeader extends StatelessWidget {
             ],
           ),
           // Right Powered By
-          Text(
-            'Powered by Gemini',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xff64748b), // Slate 500
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xff10b981),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isCompact ? 'Gemini AI' : 'Powered by Gemini',
+                style: GoogleFonts.inter(
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xff64748b), // Slate 500
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -5,12 +5,14 @@ class DonutChart extends StatefulWidget {
   final double protein;
   final double carbs;
   final double fat;
+  final double? size;
 
   const DonutChart({
     super.key,
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.size,
   });
 
   @override
@@ -55,11 +57,12 @@ class _DonutChartState extends State<DonutChart>
 
   @override
   Widget build(BuildContext context) {
+    final chartSize = widget.size ?? 180.0;
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
         return CustomPaint(
-          size: const Size(200, 200),
+          size: Size(chartSize, chartSize),
           painter: _DonutChartPainter(
             protein: widget.protein,
             carbs: widget.carbs,
@@ -88,7 +91,9 @@ class _DonutChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 2 - 18;
+    // Proportionally scale stroke width to chart size for sharp display on high PPI screens
+    final strokeWidth = (size.width * 0.12).clamp(14.0, 24.0);
+    final radius = min(size.width, size.height) / 2 - strokeWidth / 2 - 4;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final total = protein + carbs + fat;
@@ -97,7 +102,7 @@ class _DonutChartPainter extends CustomPainter {
       final emptyPaint = Paint()
         ..color = const Color(0xffe2e8f0)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 24
+        ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
       canvas.drawCircle(center, radius, emptyPaint);
       return;
@@ -111,25 +116,25 @@ class _DonutChartPainter extends CustomPainter {
     final proteinPaint = Paint()
       ..color = const Color(0xff2ecc71) // Emerald green (#2ECC71)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 24
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final carbsPaint = Paint()
       ..color = const Color(0xff3498db) // Vibrant blue (#3498DB)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 24
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final fatPaint = Paint()
       ..color = const Color(0xfff1c40f) // Golden yellow (#F1C40F)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 24
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final backgroundPaint = Paint()
       ..color = const Color(0xfff1f5f9) // Sleek slate grey track
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 18;
+      ..strokeWidth = strokeWidth * 0.75;
 
     // 1. Draw background track
     canvas.drawCircle(center, radius, backgroundPaint);
