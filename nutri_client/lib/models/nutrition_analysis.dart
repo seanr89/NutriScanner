@@ -5,7 +5,7 @@ class MacroData {
   final double fiber;
   final double sugar;
 
-  MacroData({
+  const MacroData({
     required this.protein,
     required this.carbs,
     required this.fat,
@@ -42,7 +42,7 @@ class Ingredient {
   final double fiber;
   final double sugar;
 
-  Ingredient({
+  const Ingredient({
     required this.name,
     required this.amount,
     required this.calories,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/foldable_layout.dart';
 
 class LoadingView extends StatefulWidget {
   final Uint8List imageBytes;
@@ -84,135 +85,246 @@ class _LoadingViewState extends State<LoadingView>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Holographic scan card container
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= FoldableLayout.expandedBreakpoint;
+        final isMainScreen = constraints.maxWidth >= FoldableLayout.compactBreakpoint;
+        final isTabletop = FoldableUtils.isTabletopPosture(context);
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Center(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: isWide ? 900 : 560),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMainScreen ? 32 : 20,
+                vertical: isMainScreen ? 32 : 20,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // The uploaded/captured image
-                    Image.memory(
-                      widget.imageBytes,
-                      width: double.infinity,
-                      height: 350,
-                      fit: BoxFit.cover,
-                    ),
-                    // Translucent sci-fi scanning overlay
-                    Container(
-                      width: double.infinity,
-                      height: 350,
-                      color: Colors.black.withValues(alpha: 0.55),
-                    ),
-                    // Infinite neon laser line
-                    AnimatedBuilder(
-                      animation: _laserAnimation,
-                      builder: (context, child) {
-                        return Positioned.fill(
-                          child: Align(
-                            alignment: _laserAnimation.value,
-                            child: Container(
-                              width: double.infinity,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    const Color(0xff10b981).withValues(alpha: 0.2),
-                                    const Color(0xff10b981),
-                                    const Color(0xff10b981),
-                                    const Color(0xff10b981).withValues(alpha: 0.2),
-                                    Colors.transparent,
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xff10b981)
-                                        .withValues(alpha: 0.8),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+              child: isWide && !isTabletop
+                  ? _buildWideScanLayout(context)
+                  : _buildStandardScanLayout(context, isMainScreen),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Dual column wide presentation for landscape / expanded unfolded screens
+  Widget _buildWideScanLayout(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 6,
+          child: _buildHolographicCard(height: 320),
+        ),
+        const SizedBox(width: 36),
+        Expanded(
+          flex: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildProgressSpinner(),
+              const SizedBox(height: 24),
+              _buildStatusTitle(),
+              const SizedBox(height: 10),
+              _buildStatusSubtitle(),
+              const SizedBox(height: 24),
+              _buildAnalysisStepsList(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Standard vertical stack (Adaptive for Cover Screen & Main Screen portrait)
+  Widget _buildStandardScanLayout(BuildContext context, bool isMainScreen) {
+    final imageHeight = isMainScreen ? 300.0 : 220.0;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildHolographicCard(height: imageHeight),
+        SizedBox(height: isMainScreen ? 32 : 20),
+        _buildProgressSpinner(),
+        const SizedBox(height: 16),
+        _buildStatusTitle(),
+        const SizedBox(height: 6),
+        _buildStatusSubtitle(),
+      ],
+    );
+  }
+
+  Widget _buildHolographicCard({required double height}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Image.memory(
+              widget.imageBytes,
+              width: double.infinity,
+              height: height,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: double.infinity,
+                height: height,
+                color: const Color(0xff0f172a),
+                child: const Center(
+                  child: Icon(Icons.fastfood_rounded, color: Color(0xff334155), size: 48),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
-            // Progress loader spinner
-            const SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Color(0xff10b981), // Emerald green progress indicator
-              ),
+            Container(
+              width: double.infinity,
+              height: height,
+              color: Colors.black.withValues(alpha: 0.55),
             ),
-            const SizedBox(height: 24),
-            // Cycling descriptive status message
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.2),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
+            AnimatedBuilder(
+              animation: _laserAnimation,
+              builder: (context, child) {
+                return Positioned.fill(
+                  child: Align(
+                    alignment: _laserAnimation.value,
+                    child: Container(
+                      width: double.infinity,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xff10b981).withValues(alpha: 0.2),
+                            const Color(0xff10b981),
+                            const Color(0xff10b981),
+                            const Color(0xff10b981).withValues(alpha: 0.2),
+                            Colors.transparent,
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff10b981).withValues(alpha: 0.8),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
-              child: Text(
-                _statuses[_currentStatusIndex],
-                key: ValueKey<int>(_currentStatusIndex),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xff1e293b),
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Reassuring subtitle
-            Text(
-              'Gemini AI is examining portion structures...',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: const Color(0xff64748b),
-              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressSpinner() {
+    return const SizedBox(
+      width: 32,
+      height: 32,
+      child: CircularProgressIndicator(
+        strokeWidth: 3,
+        color: Color(0xff10b981),
+      ),
+    );
+  }
+
+  Widget _buildStatusTitle() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.2),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: Text(
+        _statuses[_currentStatusIndex],
+        key: ValueKey<int>(_currentStatusIndex),
+        textAlign: TextAlign.center,
+        style: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xff1e293b),
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusSubtitle() {
+    return Text(
+      'Gemini AI is examining dish nutrition structures...',
+      textAlign: TextAlign.center,
+      style: GoogleFonts.inter(
+        fontSize: 13,
+        color: const Color(0xff64748b),
+      ),
+    );
+  }
+
+  Widget _buildAnalysisStepsList() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fafc),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xffe2e8f0)),
+      ),
+      child: Column(
+        children: [
+          _buildMiniStep('Vision Analysis', isComplete: true),
+          const SizedBox(height: 8),
+          _buildMiniStep('Macro Estimation', isComplete: _currentStatusIndex >= 1),
+          const SizedBox(height: 8),
+          _buildMiniStep('Micronutrient Mapping', isComplete: _currentStatusIndex >= 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStep(String title, {required bool isComplete}) {
+    return Row(
+      children: [
+        Icon(
+          isComplete ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+          size: 16,
+          color: isComplete ? const Color(0xff10b981) : const Color(0xff94a3b8),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: isComplete ? FontWeight.w600 : FontWeight.normal,
+            color: isComplete ? const Color(0xff1e293b) : const Color(0xff64748b),
+          ),
+        ),
+      ],
     );
   }
 }

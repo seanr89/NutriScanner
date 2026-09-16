@@ -1,9 +1,11 @@
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'models/nutrition_analysis.dart';
 import 'services/gemini_service.dart';
+import 'utils/foldable_layout.dart';
 import 'widgets/header.dart';
 import 'widgets/loading_view.dart';
 import 'widgets/results_view.dart';
@@ -27,6 +29,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'NutriScan AI',
       debugShowCheckedModeBanner: false,
+      // 120Hz LTPO smooth physics across touch, mouse, and S-Pen
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        physics: const BouncingScrollPhysics(),
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xff10b981), // Premium emerald green
@@ -44,7 +56,13 @@ class MyApp extends StatelessWidget {
 enum AppScanState { idle, scanning, results, error }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  final Future<NutritionAnalysis> Function({
+    required Uint8List imageBytes,
+    required String mimeType,
+    required String apiKey,
+  })? foodAnalyzer;
+
+  const MyHomePage({super.key, this.foodAnalyzer});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -62,8 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // Automated ingestion of Gemini API Key from environment variables loaded via .env
-    _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    _apiKey = dotenv.isInitialized ? (dotenv.env['GEMINI_API_KEY'] ?? '') : '';
   }
 
   void _handlePhotoSelected(
@@ -75,13 +92,13 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      if (_apiKey.trim().isEmpty) {
+      final analyzer = widget.foodAnalyzer ?? GeminiService.analyzeFoodImage;
+      if (widget.foodAnalyzer == null && _apiKey.trim().isEmpty) {
         throw Exception(
             'Gemini API Key is empty. Please configure it in the .env file.');
       }
 
-      // Live API Mode: Call Gemini HTTP endpoint (targets gemini-flash-lite-latest)
-      final analysis = await GeminiService.analyzeFoodImage(
+      final analysis = await analyzer(
         imageBytes: bytes,
         mimeType: mimeType,
         apiKey: _apiKey,
@@ -97,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
           msg.contains('Failed host lookup') ||
           msg.contains('ClientException')) {
         msg =
-            'Network connection failed. Please ensure your device is connected to the internet and can resolve Google APIs. (Make sure you have restarted the app after granting Android manifest internet permissions.)';
+            'Network connection failed. Please ensure your device is connected to the internet and can resolve Google APIs.';
       }
       setState(() {
         _errorMessage = msg;
@@ -120,17 +137,17 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Branding + API drawer header (Demo Mode removed)
+            // Branding + Navigation header
             const AppHeader(),
             // Central Content Section (State Machine)
             Expanded(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
+                duration: const Duration(milliseconds: 300),
                 child: _buildCurrentStateWidget(),
               ),
             ),
-            // Footer (Show in idle or bottom layout)
-            if (_appState == AppScanState.idle) _buildFooter(),
+            // Footer (Show in idle state)
+            if (_appState == AppScanState.idle) _buildFooter(context),
           ],
         ),
       ),
@@ -162,18 +179,22 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         );
       case AppScanState.error:
-        return _buildErrorView();
+        return _buildErrorView(context);
     }
   }
 
-  // A gorgeous glowing error warning state card (Demo Mode buttons removed)
-  Widget _buildErrorView() {
+  Widget _buildErrorView(BuildContext context) {
+    final isCompact = FoldableLayout.isCoverScreen(context);
+
     return Center(
       key: const ValueKey('error_view'),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 550),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        margin: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 520),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 20 : 28,
+          vertical: isCompact ? 24 : 32,
+        ),
+        margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -190,59 +211,63 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             // Warning Icon
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: const BoxDecoration(
-                color: Color(0xfffef2f2), // Red 50
+                color: Color(0xfffef2f2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.warning_amber_rounded,
-                color: Color(0xffef4444), // Red 500
-                size: 38,
+                color: Color(0xffef4444),
+                size: 34,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             // Headline
             Text(
               'Analysis Failed',
               style: GoogleFonts.outfit(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xff1e293b),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             // Detailed message
             Text(
               _errorMessage,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: 13.5,
                 color: const Color(0xff64748b),
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             // Go Back button
             OutlinedButton(
               onPressed: _resetScan,
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xff475569),
                 side: const BorderSide(color: Color(0xffcbd5e1)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.arrow_back, size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    'Go Back & Select Another Photo',
-                    style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.bold),
+                  Flexible(
+                    child: Text(
+                      'Go Back & Select Another Photo',
+                      style: GoogleFonts.inter(
+                          fontSize: 13.5, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -253,15 +278,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       alignment: Alignment.center,
       child: Text(
         '© 2026 NutriScan AI. Not medical advice. Estimates only.',
         style: GoogleFonts.inter(
-          fontSize: 12,
-          color: const Color(0xff94a3b8), // Slate 400
+          fontSize: 11.5,
+          color: const Color(0xff94a3b8),
         ),
       ),
     );

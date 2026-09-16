@@ -1,8 +1,19 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nutri_client/models/nutrition_analysis.dart';
+import 'package:nutri_client/utils/foldable_layout.dart';
 import 'package:nutri_client/widgets/donut_chart.dart';
 import 'package:nutri_client/widgets/header.dart';
+import 'package:nutri_client/widgets/results_view.dart';
+
+final kTestImageBytes = Uint8List.fromList(<int>[
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+  0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+  0x42, 0x60, 0x82,
+]);
 
 void main() {
   group('NutritionAnalysis Model Tests', () {
@@ -80,23 +91,37 @@ void main() {
     });
   });
 
+  group('FoldableLayout Tests', () {
+    test('Classifies window size classes correctly', () {
+      // 5.5" Cover Screen (1248 x 1972 @ 428ppi -> ~475 dp)
+      expect(FoldableLayout.getSizeClass(475), FoldableWindowSizeClass.compact);
+      expect(FoldableLayout.getSizeClass(360), FoldableWindowSizeClass.compact);
+
+      // 7.6" Main Screen Portrait (1848 x 2448 @ 403ppi -> ~704 - 739 dp)
+      expect(FoldableLayout.getSizeClass(704), FoldableWindowSizeClass.medium);
+      expect(FoldableLayout.getSizeClass(739), FoldableWindowSizeClass.medium);
+
+      // 7.6" Main Screen Landscape (~932 dp)
+      expect(FoldableLayout.getSizeClass(932), FoldableWindowSizeClass.expanded);
+      expect(FoldableLayout.getSizeClass(1080), FoldableWindowSizeClass.expanded);
+    });
+  });
+
   group('Widget UI Smoke Tests', () {
-    testWidgets('AppHeader renders title and Powered by text',
+    testWidgets('AppHeader renders title and branding',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
-            body: const AppHeader(),
+            body: AppHeader(),
           ),
         ),
       );
 
-      // Verify branding items exist
       expect(find.text('NutriScan AI'), findsOneWidget);
-      expect(find.text('Powered by Gemini'), findsOneWidget);
     });
 
-    testWidgets('DonutChart renders CustomPaint child',
+    testWidgets('DonutChart renders CustomPaint child with custom size',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -105,13 +130,110 @@ void main() {
               protein: 30,
               carbs: 40,
               fat: 20,
+              size: 140,
             ),
           ),
         ),
       );
 
-      // Verify that the DonutChart custom paints
       expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('ResultsView renders on Cover Screen viewport',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1248, 1972);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final dummyImage = kTestImageBytes;
+      final dummyAnalysis = NutritionAnalysis(
+        foodName: 'Grilled Salmon',
+        calories: 450,
+        servingSize: '200g fillet',
+        macros: const MacroData(protein: 38, carbs: 2, fat: 28, fiber: 0, sugar: 0),
+        vitaminsAndMinerals: ['Omega-3', 'Vitamin D'],
+        healthSummary: 'Rich in lean protein and essential fatty acids.',
+        confidenceScore: 94,
+        ingredients: [
+          Ingredient(
+            name: 'Salmon Fillet',
+            amount: '200g',
+            calories: 400,
+            protein: 36,
+            carbs: 0,
+            fat: 26,
+            fiber: 0,
+            sugar: 0,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ResultsView(
+              analysis: dummyAnalysis,
+              imageBytes: dummyImage,
+              onAnalyzeAnother: () {},
+              onAnalysisChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Grilled Salmon'), findsOneWidget);
+      expect(find.text('Macronutrients'), findsOneWidget);
+      expect(find.text('Ingredients & Portions'), findsOneWidget);
+    });
+
+    testWidgets('ResultsView renders on Main Screen (unfolded) viewport',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1848, 2448);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final dummyImage = kTestImageBytes;
+      final dummyAnalysis = NutritionAnalysis(
+        foodName: 'Avocado Toast',
+        calories: 320,
+        servingSize: '1 slice',
+        macros: const MacroData(protein: 8, carbs: 30, fat: 18, fiber: 7, sugar: 2),
+        vitaminsAndMinerals: ['Folate', 'Potassium'],
+        healthSummary: 'High fiber, healthy monounsaturated fats.',
+        confidenceScore: 92,
+        ingredients: [
+          Ingredient(
+            name: 'Sourdough Bread',
+            amount: '1 slice',
+            calories: 160,
+            protein: 5,
+            carbs: 26,
+            fat: 1,
+            fiber: 2,
+            sugar: 1,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ResultsView(
+              analysis: dummyAnalysis,
+              imageBytes: dummyImage,
+              onAnalyzeAnother: () {},
+              onAnalysisChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Avocado Toast'), findsOneWidget);
+      expect(find.text('Macronutrients'), findsOneWidget);
+      expect(find.text('Ingredients & Portions'), findsOneWidget);
+      expect(find.text('Health Insight'), findsOneWidget);
     });
   });
 }

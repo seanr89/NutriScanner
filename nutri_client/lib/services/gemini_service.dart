@@ -12,6 +12,7 @@ class GeminiService {
     required Uint8List imageBytes,
     required String mimeType,
     required String apiKey,
+    http.Client? client,
   }) async {
     final base64Image = base64Encode(imageBytes);
 
@@ -146,11 +147,19 @@ class GeminiService {
       },
     };
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    final httpClient = client ?? http.Client();
+    final http.Response response;
+    try {
+      response = await httpClient.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -159,8 +168,18 @@ class GeminiService {
     }
 
     final data = jsonDecode(response.body);
-    final text =
-        data['candidates']?[0]?['content']?['parts']?[0]?['text'] as String?;
+    final candidates = data['candidates'] as List?;
+    if (candidates == null || candidates.isEmpty) {
+      throw Exception('No analysis result received from Gemini.');
+    }
+
+    final content = candidates[0]['content'] as Map<String, dynamic>?;
+    final parts = content?['parts'] as List?;
+    if (parts == null || parts.isEmpty) {
+      throw Exception('No analysis result received from Gemini.');
+    }
+
+    final text = parts[0]['text'] as String?;
 
     if (text == null || text.trim().isEmpty) {
       throw Exception('No analysis result received from Gemini.');
