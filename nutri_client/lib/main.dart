@@ -56,7 +56,13 @@ class MyApp extends StatelessWidget {
 enum AppScanState { idle, scanning, results, error }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  final Future<NutritionAnalysis> Function({
+    required Uint8List imageBytes,
+    required String mimeType,
+    required String apiKey,
+  })? foodAnalyzer;
+
+  const MyHomePage({super.key, this.foodAnalyzer});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -74,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    _apiKey = dotenv.isInitialized ? (dotenv.env['GEMINI_API_KEY'] ?? '') : '';
   }
 
   void _handlePhotoSelected(
@@ -86,12 +92,13 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      if (_apiKey.trim().isEmpty) {
+      final analyzer = widget.foodAnalyzer ?? GeminiService.analyzeFoodImage;
+      if (widget.foodAnalyzer == null && _apiKey.trim().isEmpty) {
         throw Exception(
             'Gemini API Key is empty. Please configure it in the .env file.');
       }
 
-      final analysis = await GeminiService.analyzeFoodImage(
+      final analysis = await analyzer(
         imageBytes: bytes,
         mimeType: mimeType,
         apiKey: _apiKey,
@@ -250,13 +257,17 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.arrow_back, size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    'Go Back & Select Another Photo',
-                    style: GoogleFonts.inter(
-                        fontSize: 13.5, fontWeight: FontWeight.bold),
+                  Flexible(
+                    child: Text(
+                      'Go Back & Select Another Photo',
+                      style: GoogleFonts.inter(
+                          fontSize: 13.5, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),

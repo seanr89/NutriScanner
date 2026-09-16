@@ -181,6 +181,14 @@ class _LoadingViewState extends State<LoadingView>
               width: double.infinity,
               height: height,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: double.infinity,
+                height: height,
+                color: const Color(0xff0f172a),
+                child: const Center(
+                  child: Icon(Icons.fastfood_rounded, color: Color(0xff334155), size: 48),
+                ),
+              ),
             ),
             Container(
               width: double.infinity,

@@ -168,6 +168,14 @@ class ResultsView extends StatelessWidget {
                   width: double.infinity,
                   height: imageHeight,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: double.infinity,
+                    height: imageHeight,
+                    color: const Color(0xfff1f5f9),
+                    child: const Center(
+                      child: Icon(Icons.restaurant_rounded, color: Color(0xff94a3b8), size: 48),
+                    ),
+                  ),
                 ),
                 // Floating Portion/Serving Size Badge (Top Right)
                 if (analysis.servingSize.isNotEmpty)
@@ -355,12 +363,15 @@ class ResultsView extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Macronutrients',
-                style: GoogleFonts.outfit(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff1e293b),
+              Expanded(
+                child: Text(
+                  'Macronutrients',
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff1e293b),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -615,12 +626,15 @@ class ResultsView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'Health Insight',
-                style: GoogleFonts.outfit(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff1e293b),
+              Expanded(
+                child: Text(
+                  'Health Insight',
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff1e293b),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -686,23 +700,28 @@ class ResultsView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.restaurant_menu_rounded,
-                    color: Color(0xff10b981),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Ingredients & Portions',
-                    style: GoogleFonts.outfit(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xff1e293b),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.restaurant_menu_rounded,
+                      color: Color(0xff10b981),
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Ingredients & Portions',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xff1e293b),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               IconButton(
                 onPressed: () => _showAddEditIngredientDialog(context),
